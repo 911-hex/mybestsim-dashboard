@@ -3,32 +3,41 @@ import pandas as pd
 import glob
 import os
 import plotly.express as px
+import google.generativeai as genai
 
+# 1. CONFIGURATION DE LA PAGE
 st.set_page_config(
-    page_title="MyBestSim | Analytics Dashboard",
-    page_icon="🌐",
+    page_title="MyBestSim | AI Analytics",
+    page_icon="🤖",
     layout="wide"
 )
 
+# Configuration de l'API Gemini
+GEMINI_API_KEY = "AQ.Ab8RN6IXuLtuPY4O5xgnTea_yLJzBMOhgvo3wgV5CO6Clf-kVg"
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-pro')
+
+# CSS Personnalisé
 st.markdown("""
     <style>
     .stApp { background-color: #F0F2F6; }
     h1 { color: #1E3A8A !important; font-family: 'Inter', sans-serif; font-weight: 800 !important; text-align: center; }
     div[data-testid="stMetric"] {
-        background-color: #FFFFFF;
-        border: 1px solid #E5E7EB;
-        padding: 20px;
-        border-radius: 15px;
+        background-color: #FFFFFF; border: 1px solid #E5E7EB; padding: 20px; border-radius: 15px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .ai-box {
+        background-color: #EEF2FF; border-left: 5px solid #4F46E5; padding: 20px; border-radius: 10px; margin-bottom: 20px;
     }
     .footer { text-align: center; color: #6B7280; font-size: 0.8rem; margin-top: 50px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align: center;'>🌐 MyBestSim Analytics</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #4B5563; font-size: 1.2rem;'>Analyse comparative et optimisation du catalogue eSIM</p>", unsafe_allow_html=True)
-st.markdown("<div style='text-align: center;'><hr></div>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>🤖 MyBestSim AI Analytics</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #4B5563; font-size: 1.2rem;'>Analyse intelligente et optimisation du catalogue eSIM</p>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center;'><hr></div>", unsafe_//_html=True)
 
+# 2. CHARGEMENT DES DONNÉES
 @st.cache_data
 def load_data():
     all_files = glob.glob("data/*.csv")
@@ -61,6 +70,7 @@ try:
         df_raw['data'] = pd.to_numeric(df_raw['data'], errors='coerce')
         df_final = df_raw.dropna(subset=['prix', 'data']).copy()
 
+        # --- SIDEBAR ---
         st.sidebar.markdown("### 🛠️ Filtres d'Exploration")
         providers = df_final['fournisseur'].unique().tolist()
         selected_providers = st.sidebar.multiselect("🎯 Fournisseurs", providers, default=providers)
@@ -78,6 +88,7 @@ try:
         )
         filtered_df = df_final[mask].copy()
 
+        # --- SECTION 1 : KPIs ---
         kpi1, kpi2, kpi3, kpi4 = st.columns(4)
         with kpi1:
             st.metric("Total eSIM", f"{len(filtered_df)}")
@@ -92,6 +103,7 @@ try:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # --- SECTION 2 : ANALYSE VISUELLE ---
         col_left, col_right = st.columns(2)
 
         with col_left:
@@ -122,6 +134,7 @@ try:
             else:
                 st.warning("Pas assez de données.")
 
+        # --- SECTION 3 : TOP PERFORMANCE ---
         st.markdown("<br><div style='text-align: center;'><hr></div>", unsafe_allow_html=True)
         st.markdown("<h3 style='text-align: center;'>🏆 Top 3 : Meilleure Valeur Ajoutée</h3>", unsafe_allow_html=True)
 
@@ -135,10 +148,39 @@ try:
             if len(c_list) >= 2: p2.info(f"🥈 **{c_list[1]}**\n\n {v_list[1]:.2f} €/Go")
             if len(c_list) >= 3: p3.warning(f"🥉 **{c_list[2]}**\n\n {v_list[2]:.2f} €/Go")
 
+        # --- SECTION 4 : L'AGENT IA (Gemini) ---
+        st.markdown("<br><div style='text-align: center;'><hr></div>", unsafe_allow_html=True)
+        st.markdown("### 🤖 Assistant IA MyBestSim")
+        st.markdown("Posez une question sur vos données pour obtenir une analyse instantanée.")
+
+        user_question = st.text_input("Votre question ici...", placeholder="Ex: Quelle est la meilleure offre pour un voyageur budget ?")
+
+        if user_question:
+            with st.spinner("L'IA analyse vos données..."):
+                # Préparation du contexte pour Gemini
+                # On envoie un échantillon représentatif des données filtrées
+                data_context = filtered_df.to_string() if len(filtered_df) < 50 else filtered_df.describe().to_string()
+
+                prompt = f"""
+                Tu es l'expert data de MyBestSim. Voici les données actuelles du catalogue eSIM :
+                {data_context}
+
+                Question de l'utilisateur : {user_question}
+
+                Réponds de manière professionnelle, concise et apporte une valeur ajoutée business.
+                Si la réponse se trouve dans les données, cite des chiffres précis.
+                """
+
+                try:
+                    response = model.generate_content(prompt)
+                    st.markdown(f"<div class='ai-box'>{response.text}</div>", unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"Erreur IA : {e}")
+
         with st.expander("📋 Accéder au catalogue complet filtré"):
             st.dataframe(filtered_df, use_container_width=True)
 
-        st.markdown("<div class='footer'>MyBestSim Analytics Dashboard © 2024 - Test de Recrutement</div>", unsafe_allow_html=True)
+        st.markdown("<div class='footer'>MyBestSim AI Analytics Dashboard © 2024 - Test de Recrutement</div>", unsafe_allow_html=True)
 
 except Exception as e:
     st.error(f"Une erreur critique est survenue : {e}")
