@@ -35,7 +35,7 @@ st.markdown("""
 
 st.markdown("<h1 style='text-align: center;'>🤖 MyBestSim AI Analytics</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #4B5563; font-size: 1.2rem;'>Analyse intelligente et optimisation du catalogue eSIM</p>", unsafe_allow_html=True)
-st.markdown("<div style='text-align: center;'><hr></div>", unsafe_//_html=True)
+st.markdown("<div style='text-align: center;'><hr></div>", unsafe_allow_html=True)
 
 # 2. CHARGEMENT DES DONNÉES
 @st.cache_data
