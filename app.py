@@ -27,7 +27,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("📊 MyBestSim : Analyse Avancée du Catalogue eSIM")
-st.markdown("L'Outil d'aide à la décision pour l'optimisation du catalogue fournisseu")
+st.markdown("L'outil d'aide à la décision pour l'optimisation du catalogue fournisseurs.")
 st.markdown("---")
 
 # 1. CHARGEMENT ET NETTOYAGE DES DONNÉES
@@ -39,7 +39,7 @@ def load_data():
 
     df_list = []
     for file in all_files:
-        provider_name = os.path.basename(file).replace(".csv", "").replace("_", " ").
+        provider_name = os.path.basename(file).replace(".csv", "").replace("_", " ").title()
         try:
             temp_df = pd.read_csv(file)
             # Normalisation des colonnes
@@ -47,11 +47,11 @@ def load_data():
 
             # Recherche flexible des colonnes Prix et Data
             price_col = next((col for col in temp_df.columns if 'prix' in col or 'price' in col), None)
-            data_col = next((col for col in temp_df.columns if 'data' in col or 'go'
+            data_col = next((col for col in temp_df.columns if 'data' in col or 'go' in col), None)
 
             if price_col and data_col:
                 # On renomme et on ne garde que les colonnes utiles
-                temp_df = temp_df.rename(columns={price_col: 'prix', data_col: 'data'
+                temp_df = temp_df.rename(columns={price_col: 'prix', data_col: 'data'})
                 # On crée une copie propre pour éviter les Warning de Pandas
                 final_temp = temp_df[['prix', 'data']].copy()
                 final_temp['fournisseur'] = provider_name
@@ -65,7 +65,7 @@ try:
     df = load_data()
 
     if df is None:
-        st.error("❌ Aucune donnée valide trouvée. Vérifiez que vos fichiers CSV sontta'.")
+        st.error("❌ Aucune donnée valide trouvée. Vérifiez que vos fichiers CSV sont bien dans le dossier '/data'.")
     else:
         # Conversion numérique et nettoyage
         df['prix'] = pd.to_numeric(df['prix'], errors='coerce')
@@ -77,17 +77,17 @@ try:
         st.sidebar.header("🔍 Filtres d'Analyse")
 
         providers = df_clean['fournisseur'].unique().tolist()
-        selected_providers = st.sidebar.multiselect("Sélectionner Fournisseurs", prov
+        selected_providers = st.sidebar.multiselect("Sélectionner Fournisseurs", providers, default=providers)
 
         min_p, max_p = float(df_clean['prix'].min()), float(df_clean['prix'].max())
         price_range = st.sidebar.slider("Fourchette de Prix (€)", min_p, max_p, (min_p, max_p))
 
         min_d, max_d = float(df_clean['data'].min()), float(df_clean['data'].max())
-        data_range = st.sidebar.slider("Volume de Data (Go)", min_d, max_d, (min_d, m
+        data_range = st.sidebar.slider("Volume de Data (Go)", min_d, max_d, (min_d, max_d))
 
         filtered_df = df_clean[
             (df_clean['fournisseur'].isin(selected_providers)) &
-            (df_clean['prix'] >= price_range[0]) & (df_clean['prix'] <= price_range[1
+            (df_clean['prix'] >= price_range[0]) & (df_clean['prix'] <= price_range[1]) &
             (df_clean['data'] >= data_range[0]) & (df_clean['data'] <= data_range[1])
         ]
 
@@ -133,9 +133,9 @@ try:
             if not filtered_df.empty:
                 # Création d'une copie pour éviter les warnings
                 df_analysis = filtered_df.copy()
-                df_analysis['prix_par_go'] = df_analysis['prix'] / df_analysis['data'
+                df_analysis['prix_par_go'] = df_analysis['prix'] / df_analysis['data']
 
-                comp_df = df_analysis.groupby('fournisseur')['prix_par_go'].mean().so
+                comp_df = df_analysis.groupby('fournisseur')['prix_par_go'].mean().sort_values().reset_index()
                 comp_df.columns = ['Fournisseur', 'Prix Moyen par Go (€)']
 
                 fig_comp = px.bar(comp_df, x='Fournisseur', y='Prix Moyen par Go (€)',
@@ -153,7 +153,7 @@ try:
             # Calcul basé sur le prix moyen par Go
             final_comp = filtered_df.copy()
             final_comp['prix_par_go'] = final_comp['prix'] / final_comp['data']
-            top_value = final_comp.groupby('fournisseur')['prix_par_go'].mean().sort_ex()
+            top_value = final_comp.groupby('fournisseur')['prix_par_go'].mean().sort_values().head(3).reset_index()
             top_value.columns = ['Fournisseur', 'Prix Moyen par Go (€)']
             st.table(top_value)
 
