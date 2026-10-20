@@ -4,14 +4,12 @@ import glob
 import os
 import plotly.express as px
 
-# 1. CONFIGURATION DE LA PAGE
 st.set_page_config(
     page_title="MyBestSim | Analytics Dashboard",
     page_icon="🌐",
     layout="wide"
 )
 
-# CSS Personnalisé
 st.markdown("""
     <style>
     .stApp { background-color: #F0F2F6; }
@@ -31,33 +29,27 @@ st.markdown("<h1 style='text-align: center;'>🌐 MyBestSim Analytics</h1>", uns
 st.markdown("<p style='text-align: center; color: #4B5563; font-size: 1.2rem;'>Analyse comparative et optimisation du catalogue eSIM</p>", unsafe_allow_html=True)
 st.markdown("<div style='text-align: center;'><hr></div>", unsafe_allow_html=True)
 
-# 2. CHARGEMENT DES DONNÉES
 @st.cache_data
 def load_data():
     all_files = glob.glob("data/*.csv")
     if not all_files:
         return None
-
     df_list = []
     for file in all_files:
         provider_name = os.path.basename(file).replace(".csv", "").replace("_", " ").title()
         try:
             temp_df = pd.read_csv(file)
             temp_df.columns = [col.strip().lower() for col in temp_df.columns]
-
             price_col = next((col for col in temp_df.columns if 'prix' in col or 'price' in col), None)
             data_col = next((col for col in temp_df.columns if 'data' in col or 'go' in col), None)
-
             if price_col and data_col:
-                # On crée un nouveau dataframe avec les colonnes renommées
                 clean_temp = pd.DataFrame()
                 clean_temp['prix'] = temp_df[price_col]
                 clean_temp['data'] = temp_df[data_col]
                 clean_temp['fournisseur'] = provider_name
                 df_list.append(clean_temp)
-        except Exception:
+        except:
             pass
-
     return pd.concat(df_list, ignore_index=True) if df_list else None
 
 try:
@@ -65,25 +57,20 @@ try:
     if df_raw is None:
         st.error("❌ Données manquantes. Vérifiez le dossier /data.")
     else:
-        # Nettoyage des types
         df_raw['prix'] = pd.to_numeric(df_raw['prix'], errors='coerce')
         df_raw['data'] = pd.to_numeric(df_raw['data'], errors='coerce')
         df_final = df_raw.dropna(subset=['prix', 'data']).copy()
 
-        # --- SIDEBAR ---
         st.sidebar.markdown("### 🛠️ Filtres d'Exploration")
         providers = df_final['fournisseur'].unique().tolist()
         selected_providers = st.sidebar.multiselect("🎯 Fournisseurs", providers, default=providers)
 
-        min_p = float(df_final['prix'].min())
-        max_p = float(df_final['prix'].max())
+        min_p, max_p = float(df_final['prix'].min()), float(df_final['prix'].max())
         price_range = st.sidebar.slider("💰 Budget (€)", min_p, max_p, (min_p, max_p))
 
-        min_d = float(df_final['data'].min())
-        max_d = float(df_final['data'].max())
+        min_d, max_d = float(df_final['data'].min()), float(df_final['data'].max())
         data_range = st.sidebar.slider("📶 Data Minimum (Go)", min_d, max_d, (min_d, max_d))
 
-        # Application des filtres
         mask = (
             (df_final['fournisseur'].isin(selected_providers)) &
             (df_final['prix'] >= price_range[0]) & (df_final['prix'] <= price_range[1]) &
@@ -91,7 +78,6 @@ try:
         )
         filtered_df = df_final[mask].copy()
 
-        # --- SECTION 1 : KPIs ---
         kpi1, kpi2, kpi3, kpi4 = st.columns(4)
         with kpi1:
             st.metric("Total eSIM", f"{len(filtered_df)}")
@@ -106,23 +92,19 @@ try:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # --- SECTION 2 : ANALYSE VISUELLE ---
         col_left, col_right = st.columns(2)
 
         with col_left:
             st.markdown("### 📦 Volume par Fournisseur")
             chart_type = st.radio("Vue préférée :", ["Barres", "Cercle", "Ligne"], horizontal=True)
-
             counts = filtered_df['fournisseur'].value_counts().reset_index()
             counts.columns = ['Fournisseur', 'Nombre']
-
             if chart_type == "Barres":
                 fig = px.bar(counts, x='Fournisseur', y='Nombre', color='Nombre', color_continuous_scale='Blues', text_auto=True)
             elif chart_type == "Cercle":
                 fig = px.pie(counts, values='Nombre', names='Fournisseur', hole=0.4)
             else:
                 fig = px.line(counts, x='Fournisseur', y='Nombre', markers=True)
-
             fig.update_layout(margin=dict(l=20, r=20, t=20, b=20), plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig, use_container_width=True)
 
@@ -132,7 +114,6 @@ try:
                 filtered_df['prix_par_go'] = filtered_df['prix'] / filtered_df['data']
                 comp_df = filtered_df.groupby('fournisseur')['prix_par_go'].mean().sort_values().reset_index()
                 comp_df.columns = ['Fournisseur', 'Prix Moyen par Go (€)']
-
                 fig_comp = px.bar(comp_df, x='Prix Moyen par Go (€)', y='Fournisseur', orientation='h',
                                  color='Prix Moyen par Go (€)', color_continuous_scale='RdYlGn_r', text_auto='.2f')
                 fig_comp.update_layout(yaxis={'categoryorder':'total ascending'}, margin=dict(l=20, r=20, t=20, b=20),
@@ -141,9 +122,8 @@ try:
             else:
                 st.warning("Pas assez de données.")
 
-        # --- SECTION 3 : TOP PERFORMANCE ---
         st.markdown("<br><div style='text-align: center;'><hr></div>", unsafe_allow_html=True)
-        st.markdown("<h3 style='text-align: center;'>🏆 Top 3 : Meilleure Valeur Ajoutée</h3>", unsafe_//_html=True)
+        st.markdown("<h3 style='text-align: center;'>🏆 Top 3 : Meilleure Valeur Ajoutée</h3>", unsafe_allow_html=True)
 
         if not filtered_df.empty:
             top_val = filtered_df.groupby('fournisseur')['prix_par_go'].mean().sort_values().head(3).reset_index()
