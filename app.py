@@ -60,7 +60,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- TITRE ET HEADER ---
-st.markdown("<h1 style='text-align: center;'>🌐 MyBestSim Analytics</h1>", unsafe_all
+st.markdown("<h1 style='text-align: center;'>🌐 MyBestSim Analytics</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #4B5563; font-size: 1.2rem;'>Analyse comparative et optimisation du catalogue eSIM</p>", la_//_html=True)
 st.markdown("<div style='text-align: center;'><hr></div>", unsafe_allow_html=True)
 
@@ -76,9 +76,9 @@ def load_data():
             temp_df = pd.read_csv(file)
             temp_df.columns = [col.strip().lower() for col in temp_df.columns]
             price_col = next((col for col in temp_df.columns if 'prix' in col or 'price' in col), None)
-            data_col = next((col for col in temp_df.columns if 'data' in col or 'go'
+            data_col = next((col for col in temp_df.columns if 'data' in col or 'go' in col), None)
             if price_col and data_col:
-                temp_df = temp_df.rename(columns={price_col: 'prix', data_col: 'data'
+                temp_df = temp_df.rename(columns={price_col: 'prix', data_col: 'data'})
                 final_temp = temp_df[['prix', 'data']].copy()
                 final_temp['fournisseur'] = provider_name
                 df_list.append(final_temp)
@@ -88,7 +88,7 @@ def load_data():
 try:
     df = load_data()
     if df is None:
-        st.error("❌ Données manquantes. Veuillez placer vos fichiers CSV dans le dos
+        st.error("❌ Données manquantes. Veuillez placer vos fichiers CSV dans le dossier /data.")
     else:
         # Nettoyage
         df['prix'] = pd.to_numeric(df['prix'], errors='coerce')
@@ -98,17 +98,17 @@ try:
         # --- SIDEBAR (Filtrage Intuitive) ---
         st.sidebar.markdown("### 🛠️ Filtres d'Exploration")
         providers = df_clean['fournisseur'].unique().tolist()
-        selected_providers = st.sidebar.multiselect("🎯 Fournisseurs", providers, def
+        selected_providers = st.sidebar.multiselect("🎯 Fournisseurs", providers, default=providers)
 
         min_p, max_p = float(df_clean['prix'].min()), float(df_clean['prix'].max())
         price_range = st.sidebar.slider("💰 Budget (€)", min_p, max_p, (min_p, max_p))
 
         min_d, max_d = float(df_clean['data'].min()), float(df_clean['data'].max())
-        data_range = st.sidebar.slider("📶 Data Minimum (Go)", min_d, max_d, (min_d,
+        data_range = st.sidebar.slider("📶 Data Minimum (Go)", min_d, max_d, (min_d, max_d))
 
         filtered_df = df_clean[
             (df_clean['fournisseur'].isin(selected_providers)) &
-            (df_clean['prix'] >= price_range[0]) & (df_clean['prix'] <= price_range[1
+            (df_clean['prix'] >= price_range[0]) & (df_clean['prix'] <= price_range[1]) &
             (df_clean['data'] >= data_range[0]) & (df_clean['data'] <= data_range[1])
         ]
 
@@ -116,13 +116,13 @@ try:
         # Utilisation de colonnes pour un look "Tableau de Bord"
         kpi1, kpi2, kpi3, kpi4 = st.columns(4)
         with kpi1:
-            st.metric("Total eSIM", f"{len(filtered_df)}", help="Nombre total d'offres")
+            st.metric("Total eSIM", f"{len(filtered_df)}", help="Nombre total d'offres correspondant aux filtres")
         with kpi2:
-            st.metric("Offres Premium", f"{len(filtered_df[filtered_df['prix'] > 100]s > 100€")
+            st.metric("Offres Premium", f"{len(filtered_df[filtered_df['prix'] > 100])}", help="Nombre de cartes > 100€")
         with kpi3:
-            st.metric("Prix Moyen", f"{filtered_df['prix'].mean():.2f} €" if not filt
+            st.metric("Prix Moyen", f"{filtered_df['prix'].mean():.2f} €" if not filtered_df.empty else "0 €")
         with kpi4:
-            st.metric("Data Moyenne", f"{filtered_df['data'].mean():.2f} Go" if not fo")
+            st.metric("Data Moyenne", f"{filtered_df['data'].mean():.2f} Go" if not filtered_df.empty else "0 Go")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -140,11 +140,11 @@ try:
                 fig = px.bar(provider_counts, x='Fournisseur', y='Nombre', color='Nombre',
                              color_continuous_scale='Blues', text_auto=True)
             elif chart_type == "Cercle":
-                fig = px.pie(provider_counts, values='Nombre', names='Fournisseur', h
+                fig = px.pie(provider_counts, values='Nombre', names='Fournisseur', hole=0.4)
             else:
-                fig = px.line(provider_counts, x='Fournisseur', y='Nombre', markers=T
+                fig = px.line(provider_counts, x='Fournisseur', y='Nombre', markers=True)
 
-            fig.update_layout(margin=dict(l=20, r=20, t=20, b=20), plot_bgcolor="rgba"rgba(0,0,0,0)")
+            fig.update_layout(margin=dict(l=20, r=20, t=20, b=20), plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig, use_container_width=True)
 
         with col_right:
@@ -156,21 +156,21 @@ try:
                 comp_df = df_analysis.groupby('fournisseur')['prix_par_go'].mean().sort_values().reset_index()
                 comp_df.columns = ['Fournisseur', 'Prix Moyen par Go (€)']
 
-                # Graphique à barres horizontales pour une lecture plus facile des no
+                # Graphique à barres horizontales pour une lecture plus facile des noms
                 fig_comp = px.bar(comp_df, x='Prix Moyen par Go (€)', y='Fournisseur',
                                  orientation='h', color='Prix Moyen par Go (€)',
                                  color_continuous_scale='RdYlGn_r', text_auto='.2f')
                 fig_comp.update_layout(yaxis={'categoryorder':'total ascending'},
                                       margin=dict(l=20, r=20, t=20, b=20),
-                                      plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rg
+                                      plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_comp, use_container_width=True)
-                st.caption("👉 Le fournisseur en haut est le plus rentable pour le cl
+                st.caption("👉 Le fournisseur en haut est le plus rentable pour le client.")
             else:
                 st.warning("Veuillez ajuster les filtres pour voir l'analyse.")
 
         # --- SECTION 3 : LE TOP PERFORMANCE ---
         st.markdown("<br><div style='text-align: center;'><hr></div>", unsafe_allow_html=True)
-        st.markdown("<h3 style='text-align: center;'>🏆 Top 3 : Meilleure Valeur ajouml=True)
+        st.markdown("<h3 style='text-align: center;'>🏆 Top 3 : Meilleure Valeur ajoutée</h3>", unsafe_allow_html=True)
 
         if not filtered_df.empty:
             final_comp = filtered_df.copy()
@@ -192,7 +192,7 @@ try:
         with st.expander("📋 Accéder au catalogue complet filtré"):
             st.dataframe(filtered_df, use_container_width=True)
 
-        st.markdown("<div class='footer'>MyBestSim Analytics Dashboard © 2024 - Test afe_allow_html=True)
+        st.markdown("<div class='footer'>MyBestSim Analytics Dashboard © 2024 - Test de Recrutement</div>", unsafe_allow_html=True)
 
 except Exception as e:
     st.error(f"Une erreur critique est survenue : {e}")
