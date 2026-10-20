@@ -27,7 +27,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("📊 MyBestSim : Analyse Avancée du Catalogue eSIM")
-st.markdown("Outil d'aide à la décision pour l'optimisation du catalogue fournisseu
+st.markdown("L'Outil d'aide à la décision pour l'optimisation du catalogue fournisseu")
 st.markdown("---")
 
 # 1. CHARGEMENT ET NETTOYAGE DES DONNÉES
