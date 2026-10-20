@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Style CSS personnalisé pour rendre le dashboard plus moderne
+# Style CSS personnalisé
 st.markdown("""
     <style>
     .main {
@@ -27,36 +27,35 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("📊 MyBestSim : Analyse Avancée du Catalogue eSIM")
-st.markdown("L'outil d'aide à la décision pour l'optimisation du catalogue fournisseurs.")
+st.markdown("L'outil d'aide à la décision pour l'optimisation du catalogue fournisseu
 st.markdown("---")
 
 # 1. CHARGEMENT ET NETTOYAGE DES DONNÉES
 @st.cache_data
 def load_data():
-    # On cherche tous les fichiers CSV dans le dossier /data
     all_files = glob.glob("data/*.csv")
     if not all_files:
         return None
 
     df_list = []
     for file in all_files:
-        # Extraction du nom du fournisseur depuis le fichier
-        provider_name = os.path.basename(file).replace(".csv", "").replace("_", " ").title()
+        provider_name = os.path.basename(file).replace(".csv", "").replace("_", " ").
         try:
             temp_df = pd.read_csv(file)
-            # Normalisation des colonnes (minuscules et sans espaces)
+            # Normalisation des colonnes
             temp_df.columns = [col.strip().lower() for col in temp_df.columns]
 
             # Recherche flexible des colonnes Prix et Data
             price_col = next((col for col in temp_df.columns if 'prix' in col or 'price' in col), None)
-            data_col = next((col for col in temp_df.columns if 'data' in col or 'go' in col), None)
+            data_col = next((col for col in temp_df.columns if 'data' in col or 'go'
 
             if price_col and data_col:
-                temp_df = temp_df.rename(columns={price_col: 'prix', data_col: 'data'})
-                # On ne garde que le nécessaire pour l'analyse
-                temp_df = temp_df[['prix', 'data']].copy()
-                temp_df['fournisseur'] = provider_name
-                df_list.append(temp_//df)
+                # On renomme et on ne garde que les colonnes utiles
+                temp_df = temp_df.rename(columns={price_col: 'prix', data_col: 'data'
+                # On crée une copie propre pour éviter les Warning de Pandas
+                final_temp = temp_df[['prix', 'data']].copy()
+                final_temp['fournisseur'] = provider_name
+                df_list.append(final_temp)
         except Exception as e:
             st.error(f"Erreur sur le fichier {file}: {e}")
 
@@ -66,37 +65,33 @@ try:
     df = load_data()
 
     if df is None:
-        st.error("❌ Aucune donnée valide trouvée. Vérifiez que vos fichiers CSV sont dans le dossier '/data'.")
+        st.error("❌ Aucune donnée valide trouvée. Vérifiez que vos fichiers CSV sontta'.")
     else:
-        # Nettoyage final des types de données
+        # Conversion numérique et nettoyage
         df['prix'] = pd.to_numeric(df['prix'], errors='coerce')
         df['data'] = pd.to_numeric(df['data'], errors='coerce')
-        # On supprime les lignes vides ou "Illimité" pour les calculs de moyenne
+        # On supprime les lignes vides ou "Illimité"
         df_clean = df.dropna(subset=['prix', 'data'])
 
         # --- SIDEBAR : FILTRES INTERACTIFS ---
         st.sidebar.header("🔍 Filtres d'Analyse")
 
-        # 1. Filtre Fournisseurs
         providers = df_clean['fournisseur'].unique().tolist()
-        selected_providers = st.sidebar.multiselect("Sélectionner Fournisseurs", providers, default=providers)
+        selected_providers = st.sidebar.multiselect("Sélectionner Fournisseurs", prov
 
-        # 2. Filtre de Prix
         min_p, max_p = float(df_clean['prix'].min()), float(df_clean['prix'].max())
         price_range = st.sidebar.slider("Fourchette de Prix (€)", min_p, max_p, (min_p, max_p))
 
-        # 3. Filtre de Data
         min_d, max_d = float(df_clean['data'].min()), float(df_clean['data'].max())
-        data_range = st.sidebar.slider("Volume de Data (Go)", min_d, max_d, (min_d, max_d))
+        data_range = st.sidebar.slider("Volume de Data (Go)", min_d, max_d, (min_d, m
 
-        # Application des filtres au dataframe
         filtered_df = df_clean[
             (df_clean['fournisseur'].isin(selected_providers)) &
-            (df_clean['prix'] >= price_range[0]) & (df_clean['prix'] <= price_range[1]) &
+            (df_clean['prix'] >= price_range[0]) & (df_clean['prix'] <= price_range[1
             (df_clean['data'] >= data_range[0]) & (df_clean['data'] <= data_range[1])
         ]
 
-        # --- KPI'S (Indicateurs Clés) ---
+        # --- KPI'S ---
         st.subheader("📈 Indicateurs Clés")
         c1, c2, c3, c4 = st.columns(4)
 
@@ -136,29 +131,30 @@ try:
         with col_right:
             st.subheader("💎 Analyse de Compétitivité (Prix au Go)")
             if not filtered_df.empty:
-                # Calcul du coût unitaire par Go
-                filtered_df = filtered_df.copy()
-                filtered_df['prix_par_go'] = filtered_df['prix'] / filtered_df['data']
+                # Création d'une copie pour éviter les warnings
+                df_analysis = filtered_df.copy()
+                df_analysis['prix_par_go'] = df_analysis['prix'] / df_analysis['data'
 
-                # Moyenne par fournisseur
-                comp_df = filtered_df.groupby('fournisseur')['prix_par_go'].mean().sort_values().reset_index()
+                comp_df = df_analysis.groupby('fournisseur')['prix_par_go'].mean().so
                 comp_df.columns = ['Fournisseur', 'Prix Moyen par Go (€)']
 
                 fig_comp = px.bar(comp_df, x='Fournisseur', y='Prix Moyen par Go (€)',
                                  color='Prix Moyen par Go (€)',
-                                 color_continuous_scale='RdYlGn_r') # Vert pour le moins cher
+                                 color_continuous_scale='RdYlGn_r')
                 st.plotly_chart(fig_comp, use_container_width=True)
                 st.caption("💡 Plus la barre est basse et verte, plus le fournisseur est rentable.")
             else:
                 st.warning("Pas assez de données pour l'analyse de prix.")
 
-        # --- RÉSULTATS FINAUX & BONUS ---
+        # --- RÉSULTATS FINAUX ---
         st.markdown("---")
         st.subheader("🏆 Top 3 : Meilleurs Rapports Prix/Data")
         if not filtered_df.empty:
-            # Calcul final pour le bonus
-            top_value = filtered_df.groupby('fournisseur')['prix'].mean().sort_values().head(3).reset_index()
-            top_value.columns = ['Fournisseur', 'Prix Moyen (€)']
+            # Calcul basé sur le prix moyen par Go
+            final_comp = filtered_df.copy()
+            final_comp['prix_par_go'] = final_comp['prix'] / final_comp['data']
+            top_value = final_comp.groupby('fournisseur')['prix_par_go'].mean().sort_ex()
+            top_value.columns = ['Fournisseur', 'Prix Moyen par Go (€)']
             st.table(top_value)
 
         with st.expander("👁️ Explorer les données brutes filtrées"):
@@ -166,4 +162,3 @@ try:
 
 except Exception as e:
     st.error(f"Une erreur est survenue : {e}")
-    st.info("Conseil : Vérifiez que vos fichiers CSV sont bien dans le dossier '/data' et contiennent les colonnes 'price' et 'data_gb'.")
