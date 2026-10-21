@@ -205,13 +205,13 @@ try:
             providers = sorted(
                 p for p in df_final["provider"].unique() if p
             )
-
-            selected_providers = st.multiselect(
-                "Choisir les fournisseurs",
-                options=providers,
-                default=providers,
-                key="filter_providers"
+            selected_providers = st.sidebar.multiselect(
+                "🏢 Fournisseur",
+                options=sorted(df_final["fournisseur"].dropna().unique()),
+                default=sorted(df_final["fournisseur"].dropna().unique())
             )
+
+            
 
         # Pays
         with st.sidebar.expander("🌎 Pays / Destination", expanded=False):
