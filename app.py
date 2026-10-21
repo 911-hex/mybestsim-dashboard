@@ -15,9 +15,9 @@ st.set_page_config(
 )
 
 # Configuration de l'API Gemini
-GEMINI_API_KEY = "AQ.Ab8RN6IXuLtuPY4O5xgnTea_yLJzBMOhgvo3wgV5CO6Clf-kVg"
+GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-3.8-flash')
+model = genai.GenerativeModel("gemini-3.8-flash")
 
 # CSS Personnalisé
 st.markdown("""
