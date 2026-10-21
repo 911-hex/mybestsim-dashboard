@@ -109,30 +109,219 @@ try:
         df_raw['data'] = pd.to_numeric(df_raw['data'], errors='coerce')
         df_final = df_raw.dropna(subset=['prix', 'data']).copy()
 
-        # --- SIDEBAR ---
-        st.sidebar.markdown("### 🛠️ Filtres d'Exploration")
-        providers = df_final['fournisseur'].unique().tolist()
-        selected_providers = st.sidebar.multiselect(
-            "🎯 Fournisseurs", providers, default=providers
-        )
 
-        min_p, max_p = float(df_final['prix'].min()), float(df_final['prix'].max())
-        price_range = st.sidebar.slider(
-            "💰 Budget (€)", min_p, max_p, (min_p, max_p)
-        )
+        # --- SIDEBAR : FILTRES eSIM ---
+        st.sidebar.markdown("## 🌍 Explorer les offres eSIM")
+        st.sidebar.caption("Affinez les résultats selon votre voyage.")
 
-        min_d, max_d = float(df_final['data'].min()), float(df_final['data'].max())
-        data_range = st.sidebar.slider(
-            "📶 Data Minimum (Go)", min_d, max_d, (min_d, max_d)
-        )
+        # Préparation des colonnes utilisées par les filtres
+        df_final = df_final.copy()
 
-        mask = (
-            (df_final['fournisseur'].isin(selected_providers)) &
-            (df_final['prix'] >= price_range[0]) &
-            (df_final['prix'] <= price_range[1]) &
-            (df_final['data'] >= data_range[0]) &
-            (df_final['data'] <= data_range[1])
-        )
+        # Compatibilité avec les noms de colonnes des CSV
+        # Le chargement existant doit conserver les colonnes d'origine
+        # pour utiliser tous les filtres proposés ci-dessous.
+        available_columns = df_final.columns.tolist()
+
+        # Fournisseurs
+        with st.sidebar.expander("🏢 Fournisseurs", expanded=True):
+            providers = sorted(
+                df_final["provider"].dropna().astype(str).unique().tolist()
+            ) if "provider" in available_columns else []
+
+            selected_providers = st.multiselect(
+                "Choisir les fournisseurs",
+                options=providers,
+                default=providers,
+                key="filter_providers"
+            )
+
+        # Pays
+        with st.sidebar.expander("🌎 Pays / Destination", expanded=True):
+            if "country_name" in available_columns:
+                countries_df = df_final[["country_name"]].dropna().copy()
+                countries = sorted(
+                    countries_df["country_name"].astype(str).unique().tolist()
+                )
+            else:
+                countries = []
+
+            selected_countries = st.multiselect(
+                "Choisir un ou plusieurs pays",
+                options=countries,
+                default=[],
+                placeholder="Rechercher un pays...",
+                key="filter_countries"
+            )
+
+        # Réseau 4G / 5G
+        with st.sidebar.expander("📶 Réseau mobile", expanded=False):
+            if "network" in available_columns:
+                networks = sorted(
+                    df_final["network"].dropna().astype(str).unique().tolist()
+                )
+                network_options = ["Tous"] + networks
+            else:
+                network_options = ["Tous"]
+
+            selected_networks = st.multiselect(
+                "Technologie / réseau",
+                options=network_options,
+                default=["Tous"],
+                key="filter_networks"
+            )
+
+        # Budget
+        with st.sidebar.expander("💰 Budget", expanded=False):
+            if "price" in available_columns:
+                prices = pd.to_numeric(df_final["price"], errors="coerce").dropna()
+
+                if not prices.empty and prices.min() < prices.max():
+                    price_range = st.slider(
+                        "Prix (€)",
+                        min_value=float(prices.min()),
+                        max_value=float(prices.max()),
+                        value=(float(prices.min()), float(prices.max())),
+                        key="filter_price"
+                    )
+                elif not prices.empty:
+                    price_range = (float(prices.min()), float(prices.max()))
+                else:
+                    price_range = None
+            else:
+                price_range = None
+
+        # Volume de données
+        with st.sidebar.expander("📊 Volume de données", expanded=False):
+            if "data_gb" in available_columns:
+                data_values = pd.to_numeric(
+                    df_final["data_gb"], errors="coerce"
+                ).dropna()
+
+                if not data_values.empty and data_values.min() < data_values.max():
+                    data_range = st.slider(
+                        "Data incluse (Go)",
+                        min_value=float(data_values.min()),
+                        max_value=float(data_values.max()),
+                        value=(
+                            float(data_values.min()),
+                            float(data_values.max())
+                        ),
+                        key="filter_data"
+                    )
+                elif not data_values.empty:
+                    data_range = (
+                        float(data_values.min()),
+                        float(data_values.max())
+                    )
+                else:
+                    data_range = None
+            else:
+                data_range = None
+
+        # Durée de validité
+        with st.sidebar.expander("📅 Durée de validité", expanded=False):
+            if "validity_days" in available_columns:
+                validity_values = pd.to_numeric(
+                    df_final["validity_days"], errors="coerce"
+                ).dropna()
+
+                if (
+                    not validity_values.empty
+                    and validity_values.min() < validity_values.max()
+                ):
+                    validity_range = st.slider(
+                        "Validité (jours)",
+                        min_value=int(validity_values.min()),
+                        max_value=int(validity_values.max()),
+                        value=(
+                            int(validity_values.min()),
+                            int(validity_values.max())
+                        ),
+                        key="filter_validity"
+                    )
+                elif not validity_values.empty:
+                    validity_range = (
+                        int(validity_values.min()),
+                        int(validity_values.max())
+                    )
+                else:
+                    validity_range = None
+            else:
+                validity_range = None
+
+        # Recharge possible
+        with st.sidebar.expander("🔄 Options", expanded=False):
+            top_up_filter = st.selectbox(
+                "Recharge possible",
+                options=["Toutes les offres", "Oui", "Non"],
+                key="filter_topup"
+            )
+
+        # Application des filtres
+        filtered_df = df_final.copy()
+
+        if "provider" in filtered_df.columns and selected_providers:
+            filtered_df = filtered_df[
+                filtered_df["provider"].astype(str).isin(selected_providers)
+            ]
+        elif "provider" in filtered_df.columns and not selected_providers:
+            filtered_df = filtered_df.iloc[0:0]
+
+        if "country_name" in filtered_df.columns and selected_countries:
+            filtered_df = filtered_df[
+                filtered_df["country_name"].astype(str).isin(selected_countries)
+            ]
+
+        if "network" in filtered_df.columns:
+            if selected_networks and "Tous" not in selected_networks:
+                filtered_df = filtered_df[
+                    filtered_df["network"].astype(str).isin(selected_networks)
+                ]
+
+        if price_range is not None and "price" in filtered_df.columns:
+            numeric_price = pd.to_numeric(
+                filtered_df["price"], errors="coerce"
+            )
+            filtered_df = filtered_df[
+                numeric_price.between(price_range[0], price_range[1])
+            ]
+
+        if data_range is not None and "data_gb" in filtered_df.columns:
+            numeric_data = pd.to_numeric(
+                filtered_df["data_gb"], errors="coerce"
+            )
+            filtered_df = filtered_df[
+                numeric_data.between(data_range[0], data_range[1])
+            ]
+
+        if validity_range is not None and "validity_days" in filtered_df.columns:
+            numeric_validity = pd.to_numeric(
+                filtered_df["validity_days"], errors="coerce"
+            )
+            filtered_df = filtered_df[
+                numeric_validity.between(
+                    validity_range[0], validity_range[1]
+                )
+            ]
+
+        if top_up_filter != "Toutes les offres" and "top_up" in filtered_df.columns:
+            top_up_values = (
+                filtered_df["top_up"]
+                .astype(str)
+                .str.strip()
+                .str.lower()
+            )
+
+            true_values = {"true", "1", "yes", "oui", "y"}
+            false_values = {"false", "0", "no", "non", "n"}
+
+            if top_up_filter == "Oui":
+                filtered_df = filtered_df[top_up_values.isin(true_values)]
+            else:
+                filtered_df = filtered_df[top_up_values.isin(false_values)]
+
+        st.sidebar.caption(f"🎯 {len(filtered_df):,} offres correspondent aux filtres.")
+
 
         filtered_df = df_final[mask].copy()
 
