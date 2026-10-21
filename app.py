@@ -456,44 +456,70 @@ try:
                 paper_bgcolor="rgba(0,0,0,0)"
             )
             st.plotly_chart(fig, use_container_width=True)
-
+        
         with col_right:
             st.markdown("### 💎 Analyse de Rentabilité (Prix/Go)")
 
             if not filtered_df.empty:
+                # Convertir les colonnes en valeurs numériques
+                filtered_df["prix"] = pd.to_numeric(
+                    filtered_df["prix"], errors="coerce"
+                )
+                filtered_df["data"] = pd.to_numeric(
+                    filtered_df["data"], errors="coerce"
+                )
+
+                # Éviter les divisions par zéro
                 filtered_df["prix_par_go"] = (
-                    filtered_df["prix"] / filtered_df["data"]
+                    filtered_df["prix"]
+                    / filtered_df["data"].where(filtered_df["data"] > 0)
                 )
 
                 comp_df = (
-                    filtered_df.groupby("fournisseur")["prix_par_go"]
+                    filtered_df.dropna(subset=["prix_par_go"])
+                    .groupby("fournisseur")["prix_par_go"]
                     .mean()
                     .sort_values()
                     .reset_index()
                 )
+
                 comp_df.columns = [
                     "Fournisseur", "Prix Moyen par Go (€)"
                 ]
 
-                fig_comp = px.bar(
-                    comp_df,
-                    x="Prix Moyen par Go (€)",
-                    y="Fournisseur",
-                    orientation="h",
-                    color="Prix Moyen par Go (€)",
-                    color_continuous_scale="RdYlGn_r",
-                    text_auto=".2f"
+                if not comp_df.empty:
+                    fig_comp = px.bar(
+                        comp_df,
+                        x="Prix Moyen par Go (€)",
+                        y="Fournisseur",
+                        orientation="h",
+                        color="Prix Moyen par Go (€)",
+                        color_continuous_scale="RdYlGn_r",
+                        text_auto=".2f"
+                    )
+
+                    fig_comp.update_layout(
+                        yaxis={"categoryorder": "total ascending"},
+                        margin=dict(l=20, r=20, t=20, b=20),
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        paper_bgcolor="rgba(0,0,0,0)"
+                    )
+
+                    st.plotly_chart(
+                        fig_comp, use_container_width=True
+                    )
+                else:
+                    st.warning(
+                        "Aucune donnée exploitable pour calculer le prix par Go. "
+                        "Vérifie les colonnes prix et data de tes CSV."
+                    )
+            else:
+                st.warning(
+                    "Aucune offre ne correspond aux filtres sélectionnés."
                 )
 
-                fig_comp.update_layout(
-                    yaxis={"categoryorder": "total ascending"},
-                    margin=dict(l=20, r=20, t=20, b=20),
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    paper_bgcolor="rgba(0,0,0,0)"
-                )
-                st.plotly_chart(fig_comp, use_container_width=True)
-            else:
-                st.warning("Pas assez de données.")
+
+        
 
         # --- SECTION 3 : TOP PERFORMANCE ---
         st.markdown(
