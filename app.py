@@ -322,12 +322,10 @@ try:
         filtered_df = df_final.copy()
 
         # Fournisseurs
-        if selected_providers:
+        if selected_providers != "Tous les fournisseurs":
             filtered_df = filtered_df[
-                filtered_df["provider"].isin(selected_providers)
+                filtered_df["fournisseur"] == selected_providers
             ]
-        else:
-            filtered_df = filtered_df.iloc[0:0]
 
         # Pays : aucun pays sélectionné signifie tous les pays
         if selected_countries:
