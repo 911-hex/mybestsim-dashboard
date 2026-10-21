@@ -202,14 +202,17 @@ try:
 
         # Fournisseurs
         with st.sidebar.expander("🏢 Fournisseurs", expanded=True):
-            providers = sorted(df_final["fournisseur"].dropna().unique().tolist())
-            selected_providers = st.sidebar.multiselect(
-                "🏢 Fournisseur",
+            providers = sorted(
+                df_final["fournisseur"].dropna().unique().tolist()
+            )
+
+            selected_providers = st.multiselect(
+                "Choisir un ou plusieurs fournisseurs",
                 options=providers,
                 default=providers,
                 key="provider_filter",
-                placeholder="Choisir un ou plusieurs fournisseurs",
-                select_all=False
+                placeholder="Sélectionner les fournisseurs",
+                label_visibility="collapsed"
             )
 
             
