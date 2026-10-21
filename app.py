@@ -4,6 +4,7 @@ import glob
 import os
 import plotly.express as px
 import google.generativeai as genai
+import json
 
 # 1. CONFIGURATION DE LA PAGE
 st.set_page_config(
