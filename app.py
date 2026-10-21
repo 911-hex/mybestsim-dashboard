@@ -324,8 +324,7 @@ try:
 
 
     
-        mask = pd.Series(True, index=df_final.index)
-        filtered_df = df_final[mask].copy()
+        
 
         # --- SECTION 1 : KPIs ---
         kpi1, kpi2, kpi3, kpi4 = st.columns(4)
