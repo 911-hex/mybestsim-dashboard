@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import glob
@@ -59,8 +58,6 @@ with col_titre:
 
 st.markdown("<div style='text-align: center;'><hr></div>", unsafe_allow_html=True)
 
-
-# 2. CHARGEMENT DES DONNÉES
 
 # 2. CHARGEMENT DES DONNÉES
 @st.cache_data
@@ -169,13 +166,12 @@ def load_data():
             pd.errors.ParserError,
             UnicodeDecodeError
         ) as e:
-            st.warning(f"Impossible de lire {file} : {e}")
+            st.warning(f"Impossible de lire le fichier {file} : {e}")
 
     if not df_list:
         return None
 
     return pd.concat(df_list, ignore_index=True, sort=False)
-
 
 
 try:
@@ -190,210 +186,211 @@ try:
         df_raw["data_gb"] = df_raw["data"]
 
         # Conserver les offres même si certaines données facultatives manquent.
-        #         Les filtres numériques ignoreront les valeurs manquantes.
+        # Les filtres numériques ignoreront les valeurs manquantes.
         df_final = df_raw.dropna(subset=["prix"]).copy()
-        
-# --- SIDEBAR : FILTRES eSIM ---
-st.sidebar.markdown("## 🌍 Explorer les offres eSIM")
-st.sidebar.caption("Affinez les résultats selon votre voyage.")
 
-# Normaliser les colonnes de texte utilisées dans les filtres
-for col in ["provider", "country_name", "network"]:
-    if col in df_final.columns:
-        df_final[col] = df_final[col].fillna("").astype(str).str.strip()
+        # --- SIDEBAR : FILTRES eSIM ---
+        st.sidebar.markdown("## 🌍 Explorer les offres eSIM")
+        st.sidebar.caption("Affinez les résultats selon votre voyage.")
 
-# Fournisseurs
-with st.sidebar.expander("🏢 Fournisseurs", expanded=True):
-    providers = sorted(
-        p for p in df_final["provider"].unique() if p
-    )
+        # Normaliser les colonnes de texte utilisées dans les filtres
+        for col in ["provider", "country_name", "network"]:
+            if col in df_final.columns:
+                df_final[col] = (
+                    df_final[col].fillna("").astype(str).str.strip()
+                )
 
-    selected_providers = st.multiselect(
-        "Choisir les fournisseurs",
-        options=providers,
-        default=providers,
-        key="filter_providers"
-    )
-
-# Pays
-with st.sidebar.expander("🌎 Pays / Destination", expanded=False):
-    countries = sorted(
-        p for p in df_final["country_name"].unique() if p
-    )
-
-    selected_countries = st.multiselect(
-        "Choisir un ou plusieurs pays",
-        options=countries,
-        default=[],
-        placeholder="Rechercher un pays...",
-        key="filter_countries"
-    )
-
-# Technologie réseau
-with st.sidebar.expander("📶 Réseau mobile", expanded=False):
-    network_text = df_final["network"].str.upper()
-
-    network_options = []
-    if network_text.str.contains(r"4G|LTE", regex=True).any():
-        network_options.append("4G")
-    if network_text.str.contains("5G", regex=False).any():
-        network_options.append("5G")
-
-    selected_networks = st.multiselect(
-        "Technologie",
-        options=network_options,
-        default=[],
-        key="filter_networks"
-    )
-
-# Budget
-with st.sidebar.expander("💰 Budget", expanded=False):
-    prices = df_final["price"].dropna()
-
-    if not prices.empty:
-        pmin, pmax = float(prices.min()), float(prices.max())
-
-        if pmin < pmax:
-            price_range = st.slider(
-                "Prix",
-                min_value=pmin,
-                max_value=pmax,
-                value=(pmin, pmax),
-                key="filter_price"
+        # Fournisseurs
+        with st.sidebar.expander("🏢 Fournisseurs", expanded=True):
+            providers = sorted(
+                p for p in df_final["provider"].unique() if p
             )
-        else:
-            price_range = (pmin, pmax)
-    else:
-        price_range = None
 
-# Volume de données
-with st.sidebar.expander("📊 Volume de données", expanded=False):
-    data_values = df_final["data_gb"].dropna()
-
-    if not data_values.empty:
-        dmin, dmax = float(data_values.min()), float(data_values.max())
-
-        if dmin < dmax:
-            data_range = st.slider(
-                "Data incluse (Go)",
-                min_value=dmin,
-                max_value=dmax,
-                value=(dmin, dmax),
-                key="filter_data"
+            selected_providers = st.multiselect(
+                "Choisir les fournisseurs",
+                options=providers,
+                default=providers,
+                key="filter_providers"
             )
-        else:
-            data_range = (dmin, dmax)
-    else:
-        data_range = None
 
-# Durée de validité
-with st.sidebar.expander("📅 Durée de validité", expanded=False):
-    validity_values = df_final["validity_days"].dropna()
-
-    if not validity_values.empty:
-        vmin = int(validity_values.min())
-        vmax = int(validity_values.max())
-
-        if vmin < vmax:
-            validity_range = st.slider(
-                "Validité (jours)",
-                min_value=vmin,
-                max_value=vmax,
-                value=(vmin, vmax),
-                key="filter_validity"
+        # Pays
+        with st.sidebar.expander("🌎 Pays / Destination", expanded=False):
+            countries = sorted(
+                p for p in df_final["country_name"].unique() if p
             )
+
+            selected_countries = st.multiselect(
+                "Choisir un ou plusieurs pays",
+                options=countries,
+                default=[],
+                placeholder="Rechercher un pays...",
+                key="filter_countries"
+            )
+
+        # Technologie réseau
+        with st.sidebar.expander("📶 Réseau mobile", expanded=False):
+            network_text = df_final["network"].str.upper()
+
+            network_options = []
+            if network_text.str.contains(r"4G|LTE", regex=True).any():
+                network_options.append("4G")
+            if network_text.str.contains("5G", regex=False).any():
+                network_options.append("5G")
+
+            selected_networks = st.multiselect(
+                "Technologie",
+                options=network_options,
+                default=[],
+                key="filter_networks"
+            )
+
+        # Budget
+        with st.sidebar.expander("💰 Budget", expanded=False):
+            prices = df_final["price"].dropna()
+
+            if not prices.empty:
+                pmin, pmax = float(prices.min()), float(prices.max())
+
+                if pmin < pmax:
+                    price_range = st.slider(
+                        "Prix",
+                        min_value=pmin,
+                        max_value=pmax,
+                        value=(pmin, pmax),
+                        key="filter_price"
+                    )
+                else:
+                    price_range = (pmin, pmax)
+            else:
+                price_range = None
+
+        # Volume de données
+        with st.sidebar.expander("📊 Volume de données", expanded=False):
+            data_values = df_final["data_gb"].dropna()
+
+            if not data_values.empty:
+                dmin, dmax = (
+                    float(data_values.min()),
+                    float(data_values.max())
+                )
+
+                if dmin < dmax:
+                    data_range = st.slider(
+                        "Data incluse (Go)",
+                        min_value=dmin,
+                        max_value=dmax,
+                        value=(dmin, dmax),
+                        key="filter_data"
+                    )
+                else:
+                    data_range = (dmin, dmax)
+            else:
+                data_range = None
+
+        # Durée de validité
+        with st.sidebar.expander("📅 Durée de validité", expanded=False):
+            validity_values = df_final["validity_days"].dropna()
+
+            if not validity_values.empty:
+                vmin = int(validity_values.min())
+                vmax = int(validity_values.max())
+
+                if vmin < vmax:
+                    validity_range = st.slider(
+                        "Validité (jours)",
+                        min_value=vmin,
+                        max_value=vmax,
+                        value=(vmin, vmax),
+                        key="filter_validity"
+                    )
+                else:
+                    validity_range = (vmin, vmax)
+            else:
+                validity_range = None
+
+        # Recharge possible
+        with st.sidebar.expander("🔄 Options", expanded=False):
+            top_up_filter = st.selectbox(
+                "Recharge possible",
+                options=["Toutes les offres", "Oui", "Non"],
+                key="filter_topup"
+            )
+
+        # --- APPLICATION DES FILTRES ---
+        filtered_df = df_final.copy()
+
+        # Fournisseurs
+        if selected_providers:
+            filtered_df = filtered_df[
+                filtered_df["provider"].isin(selected_providers)
+            ]
         else:
-            validity_range = (vmin, vmax)
-    else:
-        validity_range = None
+            filtered_df = filtered_df.iloc[0:0]
 
-# Recharge possible
-with st.sidebar.expander("🔄 Options", expanded=False):
-    top_up_filter = st.selectbox(
-        "Recharge possible",
-        options=["Toutes les offres", "Oui", "Non"],
-        key="filter_topup"
-    )
+        # Pays : aucun pays sélectionné signifie tous les pays
+        if selected_countries:
+            filtered_df = filtered_df[
+                filtered_df["country_name"].isin(selected_countries)
+            ]
 
-# --- APPLICATION DES FILTRES ---
-filtered_df = df_final.copy()
+        # Réseau 4G / 5G
+        if selected_networks:
+            network_text = filtered_df["network"].str.upper()
+            network_mask = pd.Series(False, index=filtered_df.index)
 
-# Fournisseurs
-if selected_providers:
-    filtered_df = filtered_df[
-        filtered_df["provider"].isin(selected_providers)
-    ]
-else:
-    filtered_df = filtered_df.iloc[0:0]
+            if "4G" in selected_networks:
+                network_mask |= network_text.str.contains(
+                    r"4G|LTE", regex=True
+                )
 
-# Pays : aucun pays sélectionné signifie tous les pays
-if selected_countries:
-    filtered_df = filtered_df[
-        filtered_df["country_name"].isin(selected_countries)
-    ]
+            if "5G" in selected_networks:
+                network_mask |= network_text.str.contains(
+                    "5G", regex=False
+                )
 
-# Réseau 4G / 5G
-if selected_networks:
-    network_text = filtered_df["network"].str.upper()
-    network_mask = pd.Series(False, index=filtered_df.index)
+            filtered_df = filtered_df[network_mask]
 
-    if "4G" in selected_networks:
-        network_mask |= network_text.str.contains(
-            r"4G|LTE", regex=True
+        # Budget
+        if price_range is not None:
+            filtered_df = filtered_df[
+                filtered_df["price"].between(*price_range)
+            ]
+
+        # Volume de données : les valeurs manquantes ne correspondent pas au filtre
+        if data_range is not None:
+            filtered_df = filtered_df[
+                filtered_df["data_gb"].between(*data_range)
+            ]
+
+        # Validité
+        if validity_range is not None:
+            filtered_df = filtered_df[
+                filtered_df["validity_days"].between(*validity_range)
+            ]
+
+        # Recharge
+        if top_up_filter != "Toutes les offres":
+            top_up_values = (
+                filtered_df["top_up"].astype(str).str.strip().str.lower()
+            )
+
+            true_values = {"true", "1", "yes", "oui", "y"}
+            false_values = {"false", "0", "no", "non", "n"}
+
+            if top_up_filter == "Oui":
+                filtered_df = filtered_df[
+                    top_up_values.isin(true_values)
+                ]
+            else:
+                filtered_df = filtered_df[
+                    top_up_values.isin(false_values)
+                ]
+
+        st.sidebar.caption(
+            f"🎯 {len(filtered_df):,} offres correspondent aux filtres."
         )
-
-    if "5G" in selected_networks:
-        network_mask |= network_text.str.contains(
-            "5G", regex=False
-        )
-
-    filtered_df = filtered_df[network_mask]
-
-# Budget
-if price_range is not None:
-    filtered_df = filtered_df[
-        filtered_df["price"].between(*price_range)
-    ]
-
-# Volume de données : les valeurs manquantes ne correspondent pas au filtre
-if data_range is not None:
-    filtered_df = filtered_df[
-        filtered_df["data_gb"].between(*data_range)
-    ]
-
-# Validité
-if validity_range is not None:
-    filtered_df = filtered_df[
-        filtered_df["validity_days"].between(*validity_range)
-    ]
-
-# Recharge
-if top_up_filter != "Toutes les offres":
-    top_up_values = (
-        filtered_df["top_up"].astype(str).str.strip().str.lower()
-    )
-
-    true_values = {"true", "1", "yes", "oui", "y"}
-    false_values = {"false", "0", "no", "non", "n"}
-
-    if top_up_filter == "Oui":
-        filtered_df = filtered_df[top_up_values.isin(true_values)]
-    else:
-        filtered_df = filtered_df[top_up_values.isin(false_values)]
-
-st.sidebar.caption(
-    f"🎯 {len(filtered_df):,} offres correspondent aux filtres."
-)
-
 
         # Supprimer les anciennes données en cache après modification du chargement
-
-
-
-
-
-    
-        
 
         # --- SECTION 1 : KPIs ---
         kpi1, kpi2, kpi3, kpi4 = st.columns(4)
@@ -408,11 +405,17 @@ st.sidebar.caption(
             )
 
         with kpi3:
-            avg_p = filtered_df['prix'].mean() if not filtered_df.empty else 0
+            avg_p = (
+                filtered_df["prix"].mean()
+                if not filtered_df.empty else 0
+            )
             st.metric("Prix Moyen", f"{avg_p:.2f} €")
 
         with kpi4:
-            avg_d = filtered_df['data'].mean() if not filtered_df.empty else 0
+            avg_d = (
+                filtered_df["data"].mean()
+                if not filtered_df.empty else 0
+            )
             st.metric("Data Moyenne", f"{avg_d:.2f} Go")
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -427,22 +430,24 @@ st.sidebar.caption(
                 horizontal=True
             )
 
-            counts = filtered_df['fournisseur'].value_counts().reset_index()
-            counts.columns = ['Fournisseur', 'Nombre']
+            counts = (
+                filtered_df["fournisseur"].value_counts().reset_index()
+            )
+            counts.columns = ["Fournisseur", "Nombre"]
 
             if chart_type == "Barres":
                 fig = px.bar(
-                    counts, x='Fournisseur', y='Nombre',
-                    color='Nombre', color_continuous_scale='Blues',
+                    counts, x="Fournisseur", y="Nombre",
+                    color="Nombre", color_continuous_scale="Blues",
                     text_auto=True
                 )
             elif chart_type == "Cercle":
                 fig = px.pie(
-                    counts, values='Nombre', names='Fournisseur', hole=0.4
+                    counts, values="Nombre", names="Fournisseur", hole=0.4
                 )
             else:
                 fig = px.line(
-                    counts, x='Fournisseur', y='Nombre', markers=True
+                    counts, x="Fournisseur", y="Nombre", markers=True
                 )
 
             fig.update_layout(
@@ -456,30 +461,32 @@ st.sidebar.caption(
             st.markdown("### 💎 Analyse de Rentabilité (Prix/Go)")
 
             if not filtered_df.empty:
-                filtered_df['prix_par_go'] = (
-                    filtered_df['prix'] / filtered_df['data']
+                filtered_df["prix_par_go"] = (
+                    filtered_df["prix"] / filtered_df["data"]
                 )
 
                 comp_df = (
-                    filtered_df.groupby('fournisseur')['prix_par_go']
+                    filtered_df.groupby("fournisseur")["prix_par_go"]
                     .mean()
                     .sort_values()
                     .reset_index()
                 )
-                comp_df.columns = ['Fournisseur', 'Prix Moyen par Go (€)']
+                comp_df.columns = [
+                    "Fournisseur", "Prix Moyen par Go (€)"
+                ]
 
                 fig_comp = px.bar(
                     comp_df,
-                    x='Prix Moyen par Go (€)',
-                    y='Fournisseur',
-                    orientation='h',
-                    color='Prix Moyen par Go (€)',
-                    color_continuous_scale='RdYlGn_r',
-                    text_auto='.2f'
+                    x="Prix Moyen par Go (€)",
+                    y="Fournisseur",
+                    orientation="h",
+                    color="Prix Moyen par Go (€)",
+                    color_continuous_scale="RdYlGn_r",
+                    text_auto=".2f"
                 )
 
                 fig_comp.update_layout(
-                    yaxis={'categoryorder': 'total ascending'},
+                    yaxis={"categoryorder": "total ascending"},
                     margin=dict(l=20, r=20, t=20, b=20),
                     plot_bgcolor="rgba(0,0,0,0)",
                     paper_bgcolor="rgba(0,0,0,0)"
@@ -500,24 +507,32 @@ st.sidebar.caption(
 
         if not filtered_df.empty:
             top_val = (
-                filtered_df.groupby('fournisseur')['prix_par_go']
+                filtered_df.groupby("fournisseur")["prix_par_go"]
                 .mean()
                 .sort_values()
                 .head(3)
                 .reset_index()
             )
-            top_val.columns = ['Fournisseur', 'Prix Moyen par Go (€)']
+            top_val.columns = [
+                "Fournisseur", "Prix Moyen par Go (€)"
+            ]
 
             p1, p2, p3 = st.columns(3)
-            c_list = top_val['Fournisseur'].tolist()
-            v_list = top_val['Prix Moyen par Go (€)'].tolist()
+            c_list = top_val["Fournisseur"].tolist()
+            v_list = top_val["Prix Moyen par Go (€)"].tolist()
 
             if len(c_list) >= 1:
-                p1.success(f"🥇 **{c_list[0]}**\n\n {v_list[0]:.2f} €/Go")
+                p1.success(
+                    f"🥇 **{c_list[0]}**\n\n {v_list[0]:.2f} €/Go"
+                )
             if len(c_list) >= 2:
-                p2.info(f"🥈 **{c_list[1]}**\n\n {v_list[1]:.2f} €/Go")
+                p2.info(
+                    f"🥈 **{c_list[1]}**\n\n {v_list[1]:.2f} €/Go"
+                )
             if len(c_list) >= 3:
-                p3.warning(f"🥉 **{c_list[2]}**\n\n {v_list[2]:.2f} €/Go")
+                p3.warning(
+                    f"🥉 **{c_list[2]}**\n\n {v_list[2]:.2f} €/Go"
+                )
 
         # --- SECTION 4 : L'AGENT IA (Analyseur de Données Avancé) ---
         st.markdown(
@@ -562,7 +577,7 @@ st.sidebar.caption(
                 data_info = {
                     "columns": df_final.columns.tolist(),
                     "filtered_count": len(filtered_df),
-                    "providers": filtered_df['fournisseur'].unique().tolist(),
+                    "providers": filtered_df["fournisseur"].unique().tolist(),
                     "summary": filtered_df.describe().to_dict()
                 }
 
@@ -595,13 +610,19 @@ st.sidebar.caption(
                     if full_text and "{" in full_text and "}" in full_text:
                         try:
                             import re
-                            match = re.search(r'\{.*\}', full_text, re.DOTALL)
+                            match = re.search(
+                                r"\{.*\}", full_text, re.DOTALL
+                            )
 
                             if match:
                                 json_str = match.group()
                                 chart_data = json.loads(json_str)
 
-                        except (json.JSONDecodeError, AttributeError, TypeError) as json_error:
+                        except (
+                            json.JSONDecodeError,
+                            AttributeError,
+                            TypeError
+                        ) as json_error:
                             st.warning(
                                 f"Impossible d'extraire les paramètres du graphique : {json_error}"
                             )
@@ -612,7 +633,11 @@ st.sidebar.caption(
                     )
 
                     # Construction de la réponse finale
-                    final_content = full_text.replace(json_str, "").strip() if full_text else "L'IA n'a retourné aucun texte."
+                    final_content = (
+                        full_text.replace(json_str, "").strip()
+                        if full_text
+                        else "L'IA n'a retourné aucun texte."
+                    )
 
                     msg_entry = {
                         "role": "assistant",
@@ -622,27 +647,30 @@ st.sidebar.caption(
                     # Génération du graphique si demandé par l'IA
                     if chart_data:
                         try:
-                            x_col = chart_data.get('x')
-                            y_col = chart_data.get('y')
-                            type_c = chart_data.get('type_chart')
+                            x_col = chart_data.get("x")
+                            y_col = chart_data.get("y")
+                            type_c = chart_data.get("type_chart")
 
-                            if x_col in filtered_df.columns and y_col in filtered_df.columns:
-                                if type_c == 'bar':
+                            if (
+                                x_col in filtered_df.columns
+                                and y_col in filtered_df.columns
+                            ):
+                                if type_c == "bar":
                                     fig = px.bar(
                                         filtered_df, x=x_col, y=y_col,
-                                        color=x_col, text_auto='.2s'
+                                        color=x_col, text_auto=".2s"
                                     )
-                                elif type_c == 'pie':
+                                elif type_c == "pie":
                                     fig = px.pie(
                                         filtered_df, names=x_col,
                                         values=y_col, hole=0.4
                                     )
-                                elif type_c == 'scatter':
+                                elif type_c == "scatter":
                                     fig = px.scatter(
                                         filtered_df, x=x_col, y=y_col,
-                                        color='fournisseur'
+                                        color="fournisseur"
                                     )
-                                elif type_c == 'line':
+                                elif type_c == "line":
                                     fig = px.line(
                                         filtered_df, x=x_col, y=y_col
                                     )
@@ -651,12 +679,18 @@ st.sidebar.caption(
 
                                 if fig is not None:
                                     fig.update_layout(
-                                        margin=dict(l=0, r=0, t=30, b=0),
+                                        margin=dict(
+                                            l=0, r=0, t=30, b=0
+                                        ),
                                         plot_bgcolor="rgba(0,0,0,0)"
                                     )
                                     msg_entry["chart"] = fig
 
-                        except (ValueError, KeyError, TypeError) as chart_error:
+                        except (
+                            ValueError,
+                            KeyError,
+                            TypeError
+                        ) as chart_error:
                             st.warning(
                                 f"Impossible de générer le graphique : {chart_error}"
                             )
