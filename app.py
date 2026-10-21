@@ -148,39 +148,107 @@ try:
             if len(c_list) >= 2: p2.info(f"🥈 **{c_list[1]}**\n\n {v_list[1]:.2f} €/Go")
             if len(c_list) >= 3: p3.warning(f"🥉 **{c_list[2]}**\n\n {v_list[2]:.2f} €/Go")
 
-        # --- SECTION 4 : L'AGENT IA (Gemini) ---
+        
+        # --- SECTION 4 : L'AGENT IA (Analyseur de Données Avancé) ---
         st.markdown("<br><div style='text-align: center;'><hr></div>", unsafe_allow_html=True)
         st.markdown("### 🤖 Assistant IA MyBestSim")
-        st.markdown("Posez une question sur vos données pour obtenir une analyse instantanée.")
+        st.markdown("Posez une question sur vos données. L'IA analysera le catalogue et générera des réponses et des graphiques sur mesure.")
 
-        user_question = st.text_input("Votre question ici...", placeholder="Ex: Quelle est la meilleure offre pour un voyageur budget ?")
+        # Initialisation de l'historique
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
 
-        if user_question:
-            with st.spinner("L'IA analyse vos données..."):
-                # Préparation du contexte pour Gemini
-                # On envoie un échantillon représentatif des données filtrées
-                data_context = filtered_df.to_string() if len(filtered_df) < 50 else filtered_df.describe().to_string()
+        # Interface de chat
+        chat_container = st.container()
+        with chat_container:
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
+                    if "chart" in message:
+                        st.plotly_chart(message["chart"], use_container_width=True)
+
+        # Formulaire de question
+        with st.form("ai_form", clear_on_submit=True):
+            col_input, col_btn = st.columns([0.85, 0.15])
+            user_question = col_input.text_input("Votre question...", placeholder="Ex: Compare les 3 fournisseurs les plus rentables", label_visibility="collapsed")
+            submit_btn = col_btn.form_submit_button("Analyser")
+
+        if submit_btn and user_//_question: # Correction syntaxe automatique
+            with st.spinner("Analyse approfondie en cours..."):
+                # 1. Préparation du contexte technique pour l'IA
+                # On donne la structure et des stats clés, pas toutes les lignes
+                data_info = {
+                    "columns": df_final.columns.tolist(),
+                    "filtered_count": len(filtered_df),
+                    "providers": filtered_df['fournisseur'].unique().tolist(),
+                    "summary": filtered_df.describe().to_dict()
+                }
 
                 prompt = f"""
-                Tu es l'expert data de MyBestSim. Voici les données actuelles du catalogue eSIM :
-                {data_context}
+                Tu es un Expert Data Analyst chez MyBestSim.
+                CONTEXTE:
+                - Données disponibles: {data_info}
+                - Le DataFrame 'filtered_df' contient les données filtrées par l'utilisateur.
 
-                Question de l'utilisateur : {user_question}
+                MISSION:
+                Analyse la question : "{user_question}"
 
-                Réponds de manière professionnelle, concise et apporte une valeur ajoutée business.
-                Si la réponse se trouve dans les données, cite des chiffres précis.
+                CONSIGNES DE RÉPONSE:
+                1. Analyse les données et fournis une réponse professionnelle et concise.
+                2. Si une analyse quantitative est nécessaire, demande un graphique en utilisant ce format JSON à la fin de ta réponse :
+                   {{ "chart": "type", "x": "colonne_x", "y": "colonne_y", "type_chart": "bar|pie|scatter|line" }}
+                3. Types de graphiques : 'bar' (comparaison), 'pie' (répartition), 'scatter' (corrélation), 'line' (tendance).
+
+                Réponds en français.
                 """
 
                 try:
                     response = model.generate_content(prompt)
-                    st.markdown(f"<div class='ai-box'>{response.text}</div>", unsafe_allow_html=True)
+                    full_text = response.text
+
+                    # Extraction du JSON pour le graphique
+                    chart_data = None
+                    if "{" in full_text and "}" in full_text:
+                        try:
+                            import re
+                            json_str = re.search(r'\{.*\}', full_text, re.DOTALL).group()
+                            chart_data = json.loads(json_str)
+                        except: pass
+
+                    # Ajout à l'historique
+                    st.session_state.messages.append({"role": "user", "content": user_//_question})
+
+                    # Construction de la réponse finale
+                    final_content = full_text.replace(json_str if 'json_str' in locals() else "", "").strip()
+
+                    msg_entry = {"role": "assistant", "content": final_content}
+
+                    # Génération du graphique si demandé par l'IA
+                    if chart_data:
+                        try:
+                            x_col = chart_data.get('x')
+                            y_col = chart_data.get('y')
+                            type_c = chart_data.get('type_chart')
+
+                            if x_col in filtered_df.columns and y_col in filtered_df.columns:
+                                if type_c == 'bar':
+                                    fig = px.bar(filtered_df, x=x_col, y=y_col, color=x_col, text_auto='.2s')
+                                elif type_c == 'pie':
+                                    fig = px.pie(filtered_df, names=x_col, values=y_col, hole=0.4)
+                                elif type_c == 'scatter':
+                                    fig = px.scatter(filtered_df, x=x_col, y=y_col, color='fournisseur')
+                                elif type_c == 'line':
+                                    fig = px.line(filtered_df, x=x_col, y=y_col)
+                                else:
+                                    fig = None
+
+                                if fig:
+                                    fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), plot_bgcolor="rgba(0,0,0,0)")
+                                    msg_entry["chart"] = fig
+                        except: pass
+
+                    st.session_state.messages.append(msg_entry)
+                    st.rerun() # Rafraîchir pour afficher le chat
+
                 except Exception as e:
                     st.error(f"Erreur IA : {e}")
-
-        with st.expander("📋 Accéder au catalogue complet filtré"):
-            st.dataframe(filtered_df, use_container_width=True)
-
-        st.markdown("<div class='footer'>MyBestSim AI Analytics Dashboard © 2024 - Test de Recrutement</div>", unsafe_allow_html=True)
-
-except Exception as e:
-    st.error(f"Une erreur critique est survenue : {e}")
