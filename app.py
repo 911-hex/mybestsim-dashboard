@@ -35,27 +35,30 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Logo officiel en haut à gauche
-st.markdown("""
-    <div style="position: absolute; top: 15px; left: 25px; z-index: 1000;">
-        <img src="logo mybestsim.png" width="150">
-    </div>
-    """, unsafe_allow_html=True)
 
-# Titres conservés
-st.markdown(
-    "<h1 style='text-align: center;'>🤖 MyBestSim AI Analytics</h1>",
-    unsafe_allow_html=True
-)
-st.markdown(
-    "<p style='text-align: center; color: #4B5563; font-size: 1.2rem;'>"
-    "Analyse intelligente et optimisation du catalogue eSIM</p>",
-    unsafe_allow_html=True
-)
-st.markdown(
-    "<div style='text-align: center;'><hr></div>",
-    unsafe_allow_html=True
-)
+# En-tête avec logo à gauche et titres conservés
+from pathlib import Path
+
+col_logo, col_titre = st.columns([1, 5])
+
+with col_logo:
+    logo_path = Path(__file__).parent / "logo mybestsim.png"
+    if logo_path.exists():
+        st.image(str(logo_path), width=150)
+
+with col_titre:
+    st.markdown(
+        "<h1 style='text-align: center;'>🤖 MyBestSim AI Analytics</h1>",
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        "<p style='text-align: center; color: #4B5563; font-size: 1.2rem;'>"
+        "Analyse intelligente et optimisation du catalogue eSIM</p>",
+        unsafe_allow_html=True
+    )
+
+st.markdown("<div style='text-align: center;'><hr></div>", unsafe_allow_html=True)
+
 
 # 2. CHARGEMENT DES DONNÉES
 @st.cache_data
