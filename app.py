@@ -323,6 +323,8 @@ try:
         st.sidebar.caption(f"🎯 {len(filtered_df):,} offres correspondent aux filtres.")
 
 
+    
+        mask = pd.Series(True, index=df_final.index)
         filtered_df = df_final[mask].copy()
 
         # --- SECTION 1 : KPIs ---
