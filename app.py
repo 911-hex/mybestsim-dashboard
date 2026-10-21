@@ -173,7 +173,7 @@ try:
             user_question = col_input.text_input("Votre question...", placeholder="Ex: Compare les 3 fournisseurs les plus rentables", label_visibility="collapsed")
             submit_btn = col_btn.form_submit_button("Analyser")
 
-        if submit_btn and user_//_question: # Correction syntaxe automatique
+        if submit_btn and : # Correction syntaxe automatique
             with st.spinner("Analyse approfondie en cours..."):
                 # 1. Préparation du contexte technique pour l'IA
                 # On donne la structure et des stats clés, pas toutes les lignes
@@ -216,7 +216,7 @@ try:
                         except: pass
 
                     # Ajout à l'historique
-                    st.session_state.messages.append({"role": "user", "content": user_//_question})
+                    st.session_state.messages.append({"role": "user", "content": user_question})
 
                     # Construction de la réponse finale
                     final_content = full_text.replace(json_str if 'json_str' in locals() else "", "").strip()
