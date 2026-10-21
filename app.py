@@ -205,10 +205,12 @@ try:
             providers = sorted(
                 p for p in df_final["provider"].unique() if p
             )
-            selected_providers = st.sidebar.multiselect(
+            selected_providers = st.sidebar.selectbox(
                 "🏢 Fournisseur",
-                options=sorted(df_final["fournisseur"].dropna().unique()),
-                default=sorted(df_final["fournisseur"].dropna().unique())
+                options=["Tous les fournisseurs"] + sorted(
+                df_final["fournisseur"].dropna().unique().tolist()
+                ),
+                index=0
             )
 
             
