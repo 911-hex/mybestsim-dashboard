@@ -1,4 +1,4 @@
-# MyBestSim — eSIM Dashboard
+# MyBestSim - eSIM Dashboard
 
 **Explore, compare and analyse eSIM offers from multiple providers.**
 
@@ -6,12 +6,12 @@ MyBestSim Dashboard is a Streamlit application designed to make eSIM market data
 
 ## Features
 
-- **Market overview** — Track product counts, minimum and maximum prices, average prices and available data volumes.
-- **Provider comparison** — Compare the number of offers and average prices across providers.
-- **Price analysis** — Explore price distributions and identify the destinations most represented in the dataset.
-- **Flexible filters** — Narrow results by provider, destination and price range.
-- **Product search** — Find specific offers in the available data.
-- **Data export** — Download filtered results for further analysis.
+- **Market overview** - Track product counts, minimum and maximum prices, average prices and available data volumes.
+- **Provider comparison** - Compare the number of offers and average prices across providers.
+- **Price analysis** - Explore price distributions and identify the destinations most represented in the dataset.
+- **Flexible filters** - Narrow results by provider, destination and price range.
+- **Product search** - Find specific offers in the available data.
+- **Data export** - Download filtered results for further analysis.
 
 ## Project structure
 
